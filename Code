@@ -1,0 +1,190 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+%matplotlib inline
+from datetime import datetime
+import seaborn as sns
+import plotly.express as px
+import pandas as pd
+import ast
+import math
+import random
+from scipy.stats import skew
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+import xgboost as xgb
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+import pickle
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+#Rosmann Data
+database = "/content/drive/MyDrive/Colab Notebooks/Rossmann Stores Data (1).csv"
+sales_df =pd.read_csv(database)
+# Store data
+database = "/content/drive/MyDrive/Colab Notebooks/store (1).csv"
+store_df =pd.read_csv(database)
+
+# Dataset First Look
+sales_df.head()
+
+sales_df.info()
+
+
+sales_df.tail()
+
+sales_df.describe()
+
+
+
+# change state holiday value a,b,c is equal to 1
+sales_df['StateHoliday'].value_counts()
+
+
+
+# change datatype object into date format
+sales_df['Date'].unique()
+
+sales_df.isnull().sum()
+
+
+
+
+store_df.info()
+# CompetitionDistance - distance in meters to the nearest competitor stor
+
+
+sales_df['SchoolHoliday'] .unique()
+
+
+store_df.isnull().sum()
+
+li = ["DayOfWeek" , "StateHoliday" , "SchoolHoliday"]
+
+for i in li:
+  print(i)
+  print(sales_df[i].unique())
+  print("-----------------------")
+
+
+store_df.nunique()
+
+
+
+
+# STORE DATASET FILL INTO NULL VALUES I.E 0
+store_df['CompetitionDistance'] = store_df['CompetitionDistance'].fillna(0)
+store_df['CompetitionOpenSinceMonth'] = store_df['CompetitionOpenSinceMonth'].fillna(0)
+store_df['CompetitionOpenSinceYear'] = store_df['CompetitionOpenSinceYear'].fillna(0)
+store_df['Promo2SinceWeek'] = store_df['Promo2SinceWeek'].fillna(0)
+store_df['Promo2SinceYear'] = store_df['Promo2SinceYear'].fillna(0)
+store_df['PromoInterval'] = store_df['PromoInterval'].fillna(0)
+
+
+
+
+store_df.isna().sum()
+
+
+store_df
+
+final1 = pd.merge(sales_df, store_df, on='Store', how='left')
+
+
+final1
+
+
+#Change data types object to int
+final1.loc[final1['StateHoliday'] == '0', 'StateHoliday'] = 0
+final1.loc[final1['StateHoliday'] == 'a', 'StateHoliday'] = 1
+final1.loc[final1['StateHoliday'] == 'b', 'StateHoliday'] = 2
+final1.loc[final1['StateHoliday'] == 'c', 'StateHoliday'] = 3
+#store the value with same column name i.e StateHoliday with function astype
+final1['StateHoliday'] = final1['StateHoliday'].astype(int, copy=False)
+
+# change Data Types object into int
+final1.loc[final1['StoreType'] == 'a', 'StoreType'] = 0
+final1.loc[final1['StoreType'] == 'b', 'StoreType'] = 1
+final1.loc[final1['StoreType'] == 'c', 'StoreType'] = 2
+final1.loc[final1['StoreType'] == 'd', 'StoreType'] = 3
+#store the value with same column name i.e Assortment with function astype
+final1['StoreType'] = final1['StoreType'].astype(int, copy=False)
+
+print(final1[['StateHoliday', 'Assortment', 'StoreType']].nunique())
+
+final1.info()
+final1["Sales"].value_counts()
+
+# code for changing format of date from object to datetime
+final1['Date'] = pd.to_datetime(final1['Date'], format= '%Y-%m-%d')
+
+# code for change object into date format
+final1['CompetitionOpenSinceMonth'] = pd.DatetimeIndex(final1['Date']).month
+
+# code for change float into integer
+final1['CompetitionOpenSinceYear']= final1['CompetitionOpenSinceYear'].astype(int)
+final1['Promo2SinceYear']= final1['Promo2SinceYear'].astype(int)
+
+# code for change float into integer
+final1['CompetitionDistance']= final1['CompetitionDistance'].astype(int)
+final1['Promo2SinceWeek']= final1['Promo2SinceWeek'].astype(int)
+
+final1.info()
+final1.head()
+final1.describe().apply(lambda x: round(x, 2))
+
+plt.figure(figsize=(15,6))
+sns.pointplot(x= 'CompetitionOpenSinceYear', y= 'Sales', data=final1,color='Red')
+sns.set_style("dark")
+plt.title('Plot between Sales and Competition Open Since year')
+
+plt.figure(figsize=(15,6))
+sns.pointplot(x= 'Promo2SinceYear', y= 'Sales', data=final1,color='Red')
+sns.set_style("dark")
+plt.title('Plot between Sales and Promo2SinceYear')
+
+plt.figure(figsize=(15,6))
+sns.pointplot(x= 'DayOfWeek', y= 'Sales', data=final1,color='Red')
+sns.set_style("dark")
+plt.title('Plot between Sales and DayOfWeek')
+
+
+
+plt.figure(figsize=(15,6))
+sns.pointplot(x= 'CompetitionOpenSinceMonth', y= 'Sales', data=final1,color='Red')
+sns.set_style("dark")
+plt.title('Plot between Sales and CompetitionOpenSinceMonth ')
+
+
+plt.figure(figsize=(20, 11))
+plot_storetype_sales = sns.boxplot(x="StoreType", y="Sales", data=final1, saturation=1.5,width=0.8)
+plt.title('Boxplot For Sales Values')
+
+
+
+
+
+plt.figure(figsize=(20, 11))
+plot_storetype_sales = sns.boxplot(x="Assortment", y="Sales", data=final1, saturation=1.5,width=0.8)
+plt.title('Boxplot For Sales Values on the basis of Assortment')
+
+
+plt.figure(figsize=(15, 8))
+sns.countplot(x= 'DayOfWeek', hue='Open', data= final1, palette='viridis')
+plt.title('Store Daily Open Countplot')
+
+
+plt.figure(figsize=(15, 8))
+sns.countplot(x= 'DayOfWeek', hue='Promo', data= final1, palette='viridis')
+plt.title('Store Daily Promo Countplot')
+
